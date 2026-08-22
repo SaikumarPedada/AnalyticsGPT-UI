@@ -50,5 +50,11 @@ export const apiGetSessionMessages = (sessionId, token) =>
     headers: { Authorization: `Bearer ${token}` },
   });
 
+export const apiDeleteSession = (sessionId, token) =>
+  request(`/chat/session/${sessionId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
 export const buildWsUrl = (sessionId) =>
   `${WS_BASE}/chat/ws/${sessionId}`;

@@ -4,6 +4,9 @@ import { buildWsUrl } from "../services/api";
 const RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
+// Frame types that signal the response is complete — only these clear isTyping
+const TERMINAL_TYPES = new Set(["final", "error"]);
+
 export function useWebSocket(sessionId) {
   const wsRef = useRef(null);
   const [status, setStatus] = useState("disconnected");
@@ -11,7 +14,6 @@ export function useWebSocket(sessionId) {
   const onMessageRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const reconnectTimer = useRef(null);
-  // Track whether the hook is still mounted / sessionId is still valid
   const activeRef = useRef(true);
 
   const clearReconnectTimer = () => {
@@ -23,9 +25,7 @@ export function useWebSocket(sessionId) {
 
   const connect = useCallback(() => {
     if (!sessionId) return;
-    // Already open — nothing to do
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
-    // Already trying to connect
     if (wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
     setStatus("connecting");
@@ -46,10 +46,18 @@ export function useWebSocket(sessionId) {
         payload = { type: "final", text: e.data };
       }
 
-      // Clear typing indicator on any non-step message
-      if (payload.type !== "step") {
+      // ── Typing bubble logic ────────────────────────────────────────────────
+      // ping  → do nothing (server keepalive, invisible to user)
+      // step  → keep isTyping=true (still processing)
+      // final → clear isTyping (response is ready and will be rendered)
+      // error → clear isTyping (server gave up, error message follows)
+      if (TERMINAL_TYPES.has(payload.type)) {
         setIsTyping(false);
       }
+      // ping and step intentionally leave isTyping unchanged
+
+      // Skip ping frames entirely — don't forward to message handler
+      if (payload.type === "ping") return;
 
       onMessageRef.current?.(payload);
     };
@@ -61,11 +69,10 @@ export function useWebSocket(sessionId) {
 
     ws.onclose = () => {
       setIsTyping(false);
-      if (!activeRef.current) return; // unmounted — don't reconnect
+      if (!activeRef.current) return;
 
       setStatus("disconnected");
 
-      // Auto-reconnect with back-off
       if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttempts.current += 1;
         const delay = RECONNECT_DELAY_MS * reconnectAttempts.current;
@@ -91,7 +98,6 @@ export function useWebSocket(sessionId) {
     onMessageRef.current = fn;
   }, []);
 
-  // Connect / reconnect when sessionId changes
   useEffect(() => {
     activeRef.current = true;
     reconnectAttempts.current = 0;

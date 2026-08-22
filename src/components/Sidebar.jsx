@@ -11,7 +11,7 @@ function formatDate(dateStr) {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-export default function Sidebar({ open, sessions, onSelectSession, onNewChat, user, onLogout }) {
+export default function Sidebar({ open, sessions, onSelectSession, onNewChat, user, onLogout, onDeleteSession }) {
   const [selected, setSelected] = useState(null);
 
   const handleSelect = (sid) => {
@@ -66,30 +66,43 @@ export default function Sidebar({ open, sessions, onSelectSession, onNewChat, us
           const dateStr = s.session_start || s.created_at || s.start;
 
           return (
-            <button
-              key={s.session_id}
-              className={`session-item ${selected === s.session_id ? "active" : ""}`}
-              onClick={() => handleSelect(s.session_id)}
-              style={{ animationDelay: `${i * 40}ms` }}
-            >
-              <div className="session-icon">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path
-                    d="M1.5 2.5h10a.5.5 0 01.5.5v6a.5.5 0 01-.5.5H4l-2.5 2V3a.5.5 0 01.5-.5z"
-                    stroke="currentColor"
-                    strokeWidth="1.1"
-                    strokeLinejoin="round"
-                  />
+            <div key={s.session_id} className="session-item-wrap">
+              <button
+                className={`session-item ${selected === s.session_id ? "active" : ""}`}
+                onClick={() => handleSelect(s.session_id)}
+                style={{ animationDelay: `${i * 40}ms` }}
+              >
+                <div className="session-icon">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path
+                      d="M1.5 2.5h10a.5.5 0 01.5.5v6a.5.5 0 01-.5.5H4l-2.5 2V3a.5.5 0 01.5-.5z"
+                      stroke="currentColor"
+                      strokeWidth="1.1"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div className="session-info">
+                  <span className="session-id">{displayTitle}</span>
+                  <span className="session-meta">
+                    {tokens > 0 ? `${tokens.toLocaleString()} tok · ` : ""}
+                    {formatDate(dateStr)}
+                  </span>
+                </div>
+              </button>
+              <button
+                className="session-delete-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteSession(s.session_id);
+                }}
+                title="Delete session"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 3h8M4 3v7a1 1 0 001 1h2a1 1 0 001-1V3M3.5 3V2a1 1 0 011-1h3a1 1 0 011 1v1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </div>
-              <div className="session-info">
-                <span className="session-id">{displayTitle}</span>
-                <span className="session-meta">
-                  {tokens > 0 ? `${tokens.toLocaleString()} tok · ` : ""}
-                  {formatDate(dateStr)}
-                </span>
-              </div>
-            </button>
+              </button>
+            </div>
           );
         })}
       </div>

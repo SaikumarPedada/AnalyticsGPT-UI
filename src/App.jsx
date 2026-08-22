@@ -9,7 +9,11 @@ function AppRoutes() {
   const [page, setPage] = useState("login");
 
   useEffect(() => {
-    if (user) setPage("chat");
+    if (user) {
+      setPage("chat");
+    } else {
+      setPage("login");
+    }
   }, [user]);
 
   if (user) return <ChatPage />;
