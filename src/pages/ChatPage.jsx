@@ -1,18 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { apiGetSessions, apiGetSessionMessages } from "../services/api";
+import { apiGetSessions, apiGetSessionMessages, apiDeleteSession } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import MessageList from "../components/MessageList";
 import ChatInput from "../components/ChatInput";
 import Header from "../components/Header";
-
-const SUGGESTIONS = [
-  { icon: "📊", label: "Summarize my dataset" },
-  { icon: "📈", label: "Show sales trend" },
-  { icon: "🔍", label: "Find outliers" },
-  { icon: "🔄", label: "Remove null values" },
-];
 
 let _msgId = 0;
 const nextId = () => ++_msgId;
@@ -25,6 +18,7 @@ export default function ChatPage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const { status, isTyping, sendMessage, setOnMessage } = useWebSocket(sessionId);
   const bottomRef = useRef(null);
+  const [model, setModel] = useState("openai/gpt-oss-120b");
 
   // ── WebSocket message handler ──────────────────────────────────────────────
   useEffect(() => {
@@ -157,11 +151,29 @@ export default function ChatPage() {
   );
 
   // ── New chat ───────────────────────────────────────────────────────────────
-  const handleNewChat = useCallback(async () => {
+  const handleNewChat = useCallback(async (force = false) => {
+    if (messages.length === 0 && !force && status === "connected") return;
     setMessages([]);
     await newSession();
     refreshSessions();
-  }, [newSession, refreshSessions]);
+  }, [messages, status, newSession, refreshSessions]);
+
+  const handleDeleteSession = useCallback(async (sid) => {
+    const token = localStorage.getItem("analytics_pilot_token");
+    if (!token) return;
+    try {
+      await apiDeleteSession(sid, token);
+      if (sid === sessionId) {
+        setMessages([]);
+        await newSession();
+        refreshSessions();
+      } else {
+        refreshSessions();
+      }
+    } catch (err) {
+      console.error("Failed to delete session:", err);
+    }
+  }, [sessionId, newSession, refreshSessions]);
 
   return (
     <div className="chat-layout">
@@ -172,6 +184,7 @@ export default function ChatPage() {
         onNewChat={handleNewChat}
         user={user}
         onLogout={logout}
+        onDeleteSession={handleDeleteSession}
       />
 
       <div className={`chat-main ${sidebarOpen ? "sidebar-open" : ""}`}>
@@ -180,6 +193,7 @@ export default function ChatPage() {
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen((o) => !o)}
           onNewChat={handleNewChat}
+          model={model}
         />
 
         <div className="messages-area">
@@ -194,20 +208,7 @@ export default function ChatPage() {
               </div>
               <h2>How can I help you today?</h2>
               <p>analytics · visualization · etl · insights</p>
-              <div className="suggestions">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s.label}
-                    className="suggestion-chip"
-                    onClick={() =>
-                      handleSend({ message: s.label, mode: "auto", file_path: null })
-                    }
-                  >
-                    <span style={{ marginRight: 4, fontSize: 13 }}>{s.icon}</span>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+
             </div>
           )}
 
@@ -227,6 +228,8 @@ export default function ChatPage() {
             onSend={handleSend}
             disabled={status !== "connected"}
             status={status}
+            model={model}
+            setModel={setModel}
           />
           <p className="disclaimer">
             AnalyticsGPT · Responses may be imperfect · ⌘↵ new line

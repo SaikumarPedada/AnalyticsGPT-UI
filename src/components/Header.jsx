@@ -1,4 +1,4 @@
-export default function Header({ status, sidebarOpen, onToggleSidebar, onNewChat }) {
+export default function Header({ status, sidebarOpen, onToggleSidebar, onNewChat, model }) {
   const statusLabel = {
     connected: "Connected",
     connecting: "Connecting…",
@@ -12,6 +12,12 @@ export default function Header({ status, sidebarOpen, onToggleSidebar, onNewChat
     disconnected: "status-dot gray",
     error: "status-dot red",
   }[status] || "status-dot gray";
+
+  const modelLabels = {
+    "openai/gpt-oss-120b": "GPT-OSS 120B",
+    "qwen/qwen3.6-27b": "Qwen 3.6 27B",
+  };
+  const activeModelLabel = modelLabels[model] || "GPT-OSS 120B";
 
   return (
     <header className="chat-header">
@@ -44,7 +50,7 @@ export default function Header({ status, sidebarOpen, onToggleSidebar, onNewChat
             </svg>
             <span className="model-name">AnalyticsGPT</span>
           </div>
-          <span className="model-variant">7B Instruct</span>
+          <span className="model-variant">{activeModelLabel}</span>
         </div>
       </div>
 

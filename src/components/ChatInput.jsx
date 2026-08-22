@@ -41,7 +41,7 @@ function getFileIcon(name) {
   );
 }
 
-export default function ChatInput({ onSend, disabled, status }) {
+export default function ChatInput({ onSend, disabled, status, model, setModel }) {
   const [value, setValue] = useState("");
   const [mode, setMode] = useState("auto");
   const [filePath, setFilePath] = useState(null);
@@ -102,7 +102,7 @@ export default function ChatInput({ onSend, disabled, status }) {
     // Block send while uploading or if globally disabled
     if (!text || disabled || uploading) return;
 
-    onSend({ message: text, mode, file_path: filePath, file_name: fileName });
+    onSend({ message: text, mode, file_path: filePath, file_name: fileName, model });
     setValue("");
     // Keep the file attached for follow-up questions on the same dataset
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -136,6 +136,48 @@ export default function ChatInput({ onSend, disabled, status }) {
               </span>
             </button>
           ))}
+        </div>
+
+        <div style={{ width: "1px", height: "20px", background: "var(--border)", flexShrink: 0 }} />
+
+        {/* Model Selection Dropdown */}
+        <div className="model-select-wrap" style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+          <span style={{ fontSize: "11px", color: "var(--text-muted)", marginRight: "6px" }}>Model:</span>
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className="model-select"
+            style={{
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border)",
+              borderRadius: "6px",
+              padding: "4px 24px 4px 8px",
+              fontSize: "11px",
+              color: "var(--text)",
+              cursor: "pointer",
+              outline: "none",
+              fontFamily: "inherit",
+              appearance: "none",
+              fontWeight: 500,
+            }}
+          >
+            <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+            <option value="qwen/qwen3.6-27b">Qwen 3.6 27B</option>
+          </select>
+          <div style={{
+            position: "absolute",
+            right: "8px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            pointerEvents: "none",
+            color: "var(--text-muted)",
+            display: "flex",
+            alignItems: "center"
+          }}>
+            <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+              <path d="M1 2.5l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
         </div>
 
         <div style={{ width: "1px", height: "20px", background: "var(--border)", flexShrink: 0 }} />
